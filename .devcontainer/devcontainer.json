@@ -28,7 +28,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "wget https://maven.minecraftforge.net/net/minecraftforge/forge/1.16.5-36.2.34/forge-1.16.5-36.2.34-mdk.zip -O /tmp/forge.zip && unzip /tmp/forge.zip -d /workspaces/villages-mod/ && rm /tmp/forge.zip"
+	"postCreateCommand": "wget https://maven.minecraftforge.net/net/minecraftforge/forge/1.16.5-36.2.34/forge-1.16.5-36.2.34-mdk.zip -O /tmp/forge.zip && unzip -o /tmp/forge.zip -d /workspaces/villages-mod/ && rm /tmp/forge.zip && ./gradlew genVSCodeRuns"
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
