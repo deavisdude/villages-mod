@@ -9,3 +9,5 @@ forge*changelog.txt
 .vscode/
 !.vscode/launch.json
 !.vscode/settings.json
+
+run
