@@ -1,0 +1,13 @@
+# gradle
+build
+.gradle
+
+# Files from Forge MDK
+forge*changelog.txt
+
+# Ignore the entire .vscode directory except for launch.json and settings.json
+.vscode/
+!.vscode/launch.json
+!.vscode/settings.json
+
+run
