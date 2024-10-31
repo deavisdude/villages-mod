@@ -106,7 +106,7 @@ public class villages_mod
             BlockState doorState = Blocks.OAK_DOOR.defaultBlockState();
 
             int width = 10;
-            int height = 6;
+            int height = 9; 
             int depth = 10;
 
             // Create the structure
@@ -114,12 +114,15 @@ public class villages_mod
                 for (int y = 0; y < height; y++) {
                     for (int z = 0; z < depth; z++) {
                         BlockPos pos = buildingPos.offset(x, y, z);
-                        if (y == 0 || y == height - 1 || x == 0 || x == width - 1 || z == 0 || z == depth - 1) {
-                            // Create walls, floor, and ceiling
+                        if (x == 0 || x == width - 1 || z == 0 || z == depth - 1 || y == height - 1) {
+                            // Create walls and ceiling
                             world.setBlock(pos, wallState, 3);
-                        } else if (y == 1 || y == height - 2) {
-                            // Create floors
+                        } else if ((y == 0 || y == 4) && x > 0 && x < width - 1 && z > 0 && z < depth - 1) {
+                            // Create gold floors at y=0 and y=4, but only on the interior
                             world.setBlock(pos, floorState, 3);
+                        } else {
+                            // Fill the rest with air or other interior elements as needed
+                            world.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
                         }
                     }
                 }
