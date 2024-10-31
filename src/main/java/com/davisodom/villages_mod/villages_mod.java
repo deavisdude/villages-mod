@@ -1,4 +1,4 @@
-package com.example.villages_mod;
+package com.davisodom.villages_mod;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
