@@ -12,8 +12,8 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'maven-publish'
 
 version = '1.16.5-0.36.0.0' // Using ForgeMaven Versionin https://docs.minecraftforge.net/en/latest/gettingstarted/versioning/
-group = 'com.davisodom.villagesMod' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = 'villagesMod'
+group = 'com.davisodom.villages_mod' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = 'villages_mod'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(8) // Mojang ships Java 8 to end users, so your mod should target Java 8.
 
@@ -54,7 +54,7 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             mods {
-                villagesMod {
+                villages_mod {
                     source sourceSets.main
                 }
             }
@@ -76,7 +76,7 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             mods {
-                villagesMod {
+                villages_mod {
                     source sourceSets.main
                 }
             }
@@ -98,10 +98,10 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-            args '--mod', 'villagesMod', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+            args '--mod', 'villages_mod', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
 
             mods {
-                villagesMod {
+                villages_mod {
                     source sourceSets.main
                 }
             }
@@ -142,7 +142,7 @@ dependencies {
 jar {
     manifest {
         attributes([
-            "Specification-Title": "villagesMod",
+            "Specification-Title": "villages_mod",
             "Specification-Vendor": "Davis Odom",
             "Specification-Version": "1", // We are version 1 of ourselves
             "Implementation-Title": project.name,

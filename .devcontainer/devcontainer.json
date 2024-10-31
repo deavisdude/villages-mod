@@ -19,7 +19,8 @@
 				"GitHub.copilot",
 				"GitHub.copilot-chat",
 				"tamasfe.even-better-toml",
-				"xTeal.mcmeta"
+				"xTeal.mcmeta",
+				"vscjava.vscode-java-pack"
 			]
 		}
 	},
