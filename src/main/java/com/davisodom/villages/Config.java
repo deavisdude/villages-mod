@@ -22,9 +22,13 @@ public class Config {
             .comment("Whether to log the dirt block on common setup")
             .define("logDirtBlock", true);
 
-    private static final ForgeConfigSpec.IntValue MAGIC_NUMBER = BUILDER
-            .comment("A magic number")
-            .defineInRange("magicNumber", 42, 0, Integer.MAX_VALUE);
+private static final ForgeConfigSpec.IntValue MAGIC_NUMBER = BUILDER
+                .comment("A magic number")
+                .defineInRange("magicNumber", 42, 0, Integer.MAX_VALUE);
+
+private static final ForgeConfigSpec.BooleanValue ENABLE_BLUEPRINT_SAVING = BUILDER
+                .comment("Whether to enable blueprint saving")
+                .define("enableBlueprintSaving", true);
 
     public static final ForgeConfigSpec.ConfigValue<String> MAGIC_NUMBER_INTRODUCTION = BUILDER
             .comment("What you want the introduction message to be for the magic number")
@@ -46,6 +50,7 @@ public class Config {
     public static String magicNumberIntroduction;
     public static Set<Item> items;
     public static boolean logBlueprints;
+    public static boolean enableBlueprintSaving;
 
     private static boolean validateItemName(final Object obj) {
         return obj instanceof final String itemName && ForgeRegistries.ITEMS.containsKey(ResourceLocation.tryParse(itemName));
@@ -57,6 +62,7 @@ public class Config {
         magicNumber = MAGIC_NUMBER.get();
         magicNumberIntroduction = MAGIC_NUMBER_INTRODUCTION.get();
         logBlueprints = LOG_BLUEPRINTS.get();
+        enableBlueprintSaving = ENABLE_BLUEPRINT_SAVING.get();
 
         // convert the list of strings into a set of items
         items = ITEM_STRINGS.get().stream()

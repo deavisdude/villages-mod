@@ -5,14 +5,17 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.resources.ResourceLocation;
 
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,8 +55,14 @@ public class Blueprint {
     }
 
     public static Blueprint loadFromJson(String filePath) throws IOException {
+        try (FileReader reader = new FileReader(filePath)) {
+            return loadFromJson(reader);
+        }
+    }
+
+    public static Blueprint loadFromJson(Reader reader) throws IOException {
         Gson gson = new Gson();
-        JsonObject jsonObject = JsonParser.parseReader(new FileReader(filePath)).getAsJsonObject();
+        JsonObject jsonObject = JsonParser.parseReader(reader).getAsJsonObject();
 
         String name = jsonObject.get("name").getAsString();
         int width = jsonObject.get("width").getAsInt();
@@ -63,8 +72,19 @@ public class Blueprint {
         List<StructureBlockInfo> blockData = new ArrayList<>();
         jsonObject.getAsJsonArray("blockData").forEach(element -> {
             JsonObject blockInfoJson = element.getAsJsonObject();
-            BlockPos pos = new BlockPos(blockInfoJson.get("x").getAsInt(), blockInfoJson.get("y").getAsInt(), blockInfoJson.get("z").getAsInt());
-            Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockInfoJson.get("block").getAsString()));
+            BlockPos pos = new BlockPos(blockInfoJson.get("x").getAsInt(), 
+                                        blockInfoJson.get("y").getAsInt(), 
+                                        blockInfoJson.get("z").getAsInt());
+            String blockName = blockInfoJson.get("block").getAsString();
+            if (!blockName.contains(":")) {
+                blockName = "minecraft:" + blockName;
+            }
+            ResourceLocation resourceLocation = ResourceLocation.tryParse(blockName);
+            if (resourceLocation == null) {
+                System.err.println("Invalid block identifier: " + blockName + " at " + pos);
+                resourceLocation = ResourceLocation.tryParse("minecraft:air");
+            }
+            Block block = ForgeRegistries.BLOCKS.getValue(resourceLocation);
             BlockState state = block.defaultBlockState();
             blockData.add(new StructureBlockInfo(pos, state, null));
         });

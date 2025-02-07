@@ -1,8 +1,13 @@
 package com.davisodom.villages;
 
+import com.davisodom.villages.command.BlueprintSaveCommand;
+import com.davisodom.villages.BlueprintSelectionHandler;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
@@ -34,6 +39,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import org.slf4j.Logger;
 
@@ -87,6 +94,14 @@ public class Villages {
         context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
+    public Villages() {
+        // Register the command event subscriber
+        MinecraftForge.EVENT_BUS.register(BlueprintSaveCommand.class);
+        // Register the blueprint selection handler
+        MinecraftForge.EVENT_BUS.register(BlueprintSelectionHandler.class);
+        // ... other initialization code
+    }
+
     private void commonSetup(final FMLCommonSetupEvent event) {
         // Some common setup code
         LOGGER.info("HELLO FROM COMMON SETUP");
@@ -100,22 +115,24 @@ public class Villages {
         Config.items.forEach((item) -> LOGGER.info("ITEM >> {}", item.toString()));
 
         // Load blueprints and generate villages
-        List<Blueprint> blueprints = loadBlueprints("src/main/resources/blueprints");
+        List<Blueprint> blueprints = loadBlueprints();
         generateVillage(blueprints);
     }
 
-    private List<Blueprint> loadBlueprints(String directoryPath) {
+    private List<Blueprint> loadBlueprints() {
         List<Blueprint> blueprints = new ArrayList<>();
-        try {
-            Files.list(Paths.get(directoryPath)).forEach(path -> {
-                try {
-                    blueprints.add(Blueprint.loadFromJson(path.toString()));
-                } catch (IOException e) {
-                    LOGGER.error("Failed to load blueprint from file: " + path, e);
+        // List of blueprint filenames (could be extended to a config-driven list)
+        String[] blueprintFiles = { "example_blueprint.json" };
+        for (String blueprintFile : blueprintFiles) {
+            try (InputStream is = getClass().getClassLoader().getResourceAsStream("blueprints/" + blueprintFile)) {
+                if (is != null) {
+                    blueprints.add(Blueprint.loadFromJson(new InputStreamReader(is)));
+                } else {
+                    LOGGER.error("Blueprint resource not found: " + blueprintFile);
                 }
-            });
-        } catch (IOException e) {
-            LOGGER.error("Failed to list blueprint files in directory: " + directoryPath, e);
+            } catch (IOException e) {
+                LOGGER.error("Failed to load blueprint from resource: " + blueprintFile, e);
+            }
         }
         return blueprints;
     }
@@ -137,8 +154,29 @@ public class Villages {
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-        // Do something when the server starts
         LOGGER.info("HELLO from server starting");
+        
+        // Get the overworld (assumes Level.OVERWORLD is used)
+        ServerLevel world = event.getServer().getLevel(Level.OVERWORLD);
+        if (world != null) {
+            // Load the blueprints (example_blueprint.json)
+            List<Blueprint> blueprints = loadBlueprints();
+            if (!blueprints.isEmpty()) {
+                // Use the first blueprint as the village blueprint
+                Blueprint blueprint = blueprints.get(0);
+                BlockPos spawn = world.getSharedSpawnPos();
+                LOGGER.info("Generating village using blueprint: " + blueprint.getName() + " at spawn " + spawn);
+                // Place each block from the blueprint relative to spawn
+                blueprint.getBlockData().forEach(info -> {
+                    BlockPos target = spawn.offset(info.pos());
+                    world.setBlock(target, info.state(), 3);
+                });
+            } else {
+                LOGGER.error("No blueprints loaded, village generation aborted.");
+            }
+        } else {
+            LOGGER.error("Overworld not found, village generation aborted.");
+        }
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
