@@ -35,12 +35,17 @@ public class Config {
             .comment("A list of items to log on common setup.")
             .defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), Config::validateItemName);
 
+    private static final ForgeConfigSpec.BooleanValue LOG_BLUEPRINTS = BUILDER
+            .comment("Whether to log blueprints on common setup")
+            .define("logBlueprints", true);
+
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
     public static boolean logDirtBlock;
     public static int magicNumber;
     public static String magicNumberIntroduction;
     public static Set<Item> items;
+    public static boolean logBlueprints;
 
     private static boolean validateItemName(final Object obj) {
         return obj instanceof final String itemName && ForgeRegistries.ITEMS.containsKey(ResourceLocation.tryParse(itemName));
@@ -51,6 +56,7 @@ public class Config {
         logDirtBlock = LOG_DIRT_BLOCK.get();
         magicNumber = MAGIC_NUMBER.get();
         magicNumberIntroduction = MAGIC_NUMBER_INTRODUCTION.get();
+        logBlueprints = LOG_BLUEPRINTS.get();
 
         // convert the list of strings into a set of items
         items = ITEM_STRINGS.get().stream()

@@ -28,6 +28,12 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 import java.util.HashSet;
+import java.util.List;
+import java.util.ArrayList;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 
@@ -92,6 +98,34 @@ public class Villages {
 
         Config.items = new HashSet<>(); // Ensure this is not null
         Config.items.forEach((item) -> LOGGER.info("ITEM >> {}", item.toString()));
+
+        // Load blueprints and generate villages
+        List<Blueprint> blueprints = loadBlueprints("src/main/resources/blueprints");
+        generateVillage(blueprints);
+    }
+
+    private List<Blueprint> loadBlueprints(String directoryPath) {
+        List<Blueprint> blueprints = new ArrayList<>();
+        try {
+            Files.list(Paths.get(directoryPath)).forEach(path -> {
+                try {
+                    blueprints.add(Blueprint.loadFromJson(path.toString()));
+                } catch (IOException e) {
+                    LOGGER.error("Failed to load blueprint from file: " + path, e);
+                }
+            });
+        } catch (IOException e) {
+            LOGGER.error("Failed to list blueprint files in directory: " + directoryPath, e);
+        }
+        return blueprints;
+    }
+
+    private void generateVillage(List<Blueprint> blueprints) {
+        // Placeholder for village generation logic using blueprints
+        blueprints.forEach(blueprint -> {
+            LOGGER.info("Generating village using blueprint: " + blueprint.getName());
+            // Add village generation logic here
+        });
     }
 
     // Add the example block item to the building blocks tab
