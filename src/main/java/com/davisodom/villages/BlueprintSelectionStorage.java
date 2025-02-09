@@ -14,4 +14,8 @@ public class BlueprintSelectionStorage {
     public static BlueprintSelection getSelection(UUID playerId) {
         return selections.get(playerId);
     }
+
+    public static void clearSelection(UUID playerId) {
+        selections.remove(playerId);
+    }
 }

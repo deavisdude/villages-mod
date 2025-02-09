@@ -1,1514 +1,548 @@
 {
-  "name": "example_blueprint",
-  "width": 10,
+  "name": "player_blueprint",
+  "width": 5,
   "height": 6,
-  "length": 10,
+  "length": 3,
   "blockData": [
     {
       "x": 0,
       "y": 0,
       "z": 0,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 1,
-      "y": 0,
-      "z": 0,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 0,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 0,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 0,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 0,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 0,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 0,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 0,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 9,
-      "y": 0,
-      "z": 0,
-      "block": "minecraft:oak_planks"
+      "block": "minecraft:air"
     },
     {
       "x": 0,
       "y": 0,
       "z": 1,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 9,
-      "y": 0,
-      "z": 1,
-      "block": "minecraft:oak_planks"
+      "block": "minecraft:air"
     },
     {
       "x": 0,
       "y": 0,
       "z": 2,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 9,
-      "y": 0,
-      "z": 2,
-      "block": "minecraft:oak_planks"
+      "block": "minecraft:oak_leaves"
     },
     {
       "x": 0,
-      "y": 0,
-      "z": 3,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 9,
-      "y": 0,
-      "z": 3,
-      "block": "minecraft:oak_planks"
+      "y": 1,
+      "z": 0,
+      "block": "minecraft:air"
     },
     {
       "x": 0,
-      "y": 0,
-      "z": 4,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 9,
-      "y": 0,
-      "z": 4,
-      "block": "minecraft:oak_planks"
+      "y": 1,
+      "z": 1,
+      "block": "minecraft:air"
     },
     {
       "x": 0,
-      "y": 0,
-      "z": 5,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 9,
-      "y": 0,
-      "z": 5,
-      "block": "minecraft:oak_planks"
+      "y": 1,
+      "z": 2,
+      "block": "minecraft:air"
     },
     {
       "x": 0,
-      "y": 0,
-      "z": 6,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 9,
-      "y": 0,
-      "z": 6,
-      "block": "minecraft:oak_planks"
+      "y": 2,
+      "z": 0,
+      "block": "minecraft:air"
     },
     {
       "x": 0,
-      "y": 0,
-      "z": 7,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 9,
-      "y": 0,
-      "z": 7,
-      "block": "minecraft:oak_planks"
+      "y": 2,
+      "z": 1,
+      "block": "minecraft:air"
     },
     {
       "x": 0,
-      "y": 0,
-      "z": 8,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 9,
-      "y": 0,
-      "z": 8,
-      "block": "minecraft:oak_planks"
+      "y": 2,
+      "z": 2,
+      "block": "minecraft:air"
     },
     {
       "x": 0,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:oak_planks"
+      "y": 3,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 1,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 1,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 1,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 2,
+      "block": "minecraft:air"
     },
     {
       "x": 1,
       "y": 0,
-      "z": 9,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:oak_planks"
-    },
-    {
-      "x": 9,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:oak_planks"
+      "z": 0,
+      "block": "minecraft:air"
     },
     {
       "x": 1,
       "y": 0,
       "z": 1,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 1,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 1,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 1,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 1,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 1,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 1,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 1,
-      "block": "minecraft:grass_block"
+      "block": "minecraft:oak_leaves"
     },
     {
       "x": 1,
       "y": 0,
       "z": 2,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 2,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 2,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 2,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 2,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 2,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 2,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 2,
-      "block": "minecraft:grass_block"
+      "block": "minecraft:oak_leaves"
     },
     {
       "x": 1,
-      "y": 0,
-      "z": 3,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 3,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 3,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 3,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 3,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 3,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 3,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 3,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 1,
-      "y": 0,
-      "z": 4,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 4,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 4,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 4,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 4,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 4,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 4,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 4,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 1,
-      "y": 0,
-      "z": 5,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 5,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 5,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 5,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 5,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 5,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 5,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 5,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 1,
-      "y": 0,
-      "z": 6,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 6,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 6,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 6,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 6,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 6,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 6,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 6,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 1,
-      "y": 0,
-      "z": 7,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 7,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 7,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 7,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 7,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 7,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 7,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 7,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 1,
-      "y": 0,
-      "z": 8,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 8,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 8,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 8,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 8,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 8,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 8,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 8,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 1,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 2,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 3,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 4,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 5,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 6,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 7,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:grass_block"
-    },
-    {
-      "x": 8,
-      "y": 0,
-      "z": 9,
-      "block": "minecraft:grass_block"
+      "y": 1,
+      "z": 0,
+      "block": "minecraft:air"
     },
     {
       "x": 1,
       "y": 1,
       "z": 1,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 2,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 3,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 6,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 7,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:oak_fence"
+      "block": "minecraft:oak_leaves"
     },
     {
       "x": 1,
       "y": 1,
       "z": 2,
-      "block": "minecraft:oak_fence"
+      "block": "minecraft:air"
     },
     {
-      "x": 8,
-      "y": 1,
+      "x": 1,
+      "y": 2,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 1,
+      "block": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 2,
       "z": 2,
-      "block": "minecraft:oak_fence"
+      "block": "minecraft:air"
     },
     {
       "x": 1,
-      "y": 1,
-      "z": 3,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 3,
-      "block": "minecraft:oak_fence"
+      "y": 3,
+      "z": 0,
+      "block": "minecraft:air"
     },
     {
       "x": 1,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:oak_fence"
+      "y": 3,
+      "z": 1,
+      "block": "minecraft:air"
     },
     {
       "x": 1,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:oak_fence"
+      "y": 3,
+      "z": 2,
+      "block": "minecraft:air"
     },
     {
       "x": 1,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:oak_fence"
+      "y": 4,
+      "z": 0,
+      "block": "minecraft:air"
     },
     {
       "x": 1,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:oak_fence"
+      "y": 4,
+      "z": 1,
+      "block": "minecraft:air"
     },
     {
       "x": 1,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:oak_fence"
+      "y": 4,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 1,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 0,
+      "block": "minecraft:oak_leaves"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 1,
+      "block": "minecraft:oak_log"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 2,
+      "block": "minecraft:oak_leaves"
     },
     {
       "x": 2,
       "y": 1,
-      "z": 8,
-      "block": "minecraft:oak_fence"
+      "z": 0,
+      "block": "minecraft:oak_leaves"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 1,
+      "block": "minecraft:oak_leaves"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 2,
+      "block": "minecraft:oak_leaves"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 1,
+      "block": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 1,
+      "block": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 1,
+      "block": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 1,
+      "block": "minecraft:glass_pane"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 1,
+      "block": "minecraft:oak_leaves"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 2,
+      "block": "minecraft:air"
     },
     {
       "x": 3,
       "y": 1,
-      "z": 8,
-      "block": "minecraft:oak_fence"
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 1,
+      "block": "minecraft:oak_leaves"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 1,
+      "block": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 1,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 1,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 0,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 1,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 2,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 0,
+      "block": "minecraft:birch_leaves"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 1,
+      "block": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 2,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 1,
-      "z": 8,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 6,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 7,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:oak_fence"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:oak_fence"
+      "z": 0,
+      "block": "minecraft:birch_leaves"
     },
     {
       "x": 4,
       "y": 1,
-      "z": 4,
-      "block": "minecraft:bed"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:bed"
+      "z": 1,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 1,
-      "z": 5,
-      "block": "minecraft:crafting_table"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:crafting_table"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:glass_pane"
+      "z": 2,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 2,
-      "z": 4,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 2,
-      "z": 4,
-      "block": "minecraft:glass_pane"
+      "z": 0,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 2,
-      "z": 5,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 2,
-      "z": 5,
-      "block": "minecraft:glass_pane"
+      "z": 1,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 2,
-      "z": 6,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 2,
-      "z": 6,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 4,
-      "y": 2,
-      "z": 7,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 2,
-      "z": 7,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 4,
-      "y": 2,
-      "z": 8,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 2,
-      "z": 8,
-      "block": "minecraft:glass_pane"
+      "z": 2,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 3,
-      "z": 4,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 3,
-      "z": 4,
-      "block": "minecraft:glass_pane"
+      "z": 0,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 3,
-      "z": 5,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 3,
-      "z": 5,
-      "block": "minecraft:glass_pane"
+      "z": 1,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 3,
-      "z": 6,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 3,
-      "z": 6,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 4,
-      "y": 3,
-      "z": 7,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 3,
-      "z": 7,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 4,
-      "y": 3,
-      "z": 8,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 3,
-      "z": 8,
-      "block": "minecraft:glass_pane"
+      "z": 2,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 4,
-      "z": 4,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 4,
-      "z": 4,
-      "block": "minecraft:glass_pane"
+      "z": 0,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 4,
-      "z": 5,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 4,
-      "z": 5,
-      "block": "minecraft:glass_pane"
+      "z": 1,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 4,
-      "z": 6,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 4,
-      "z": 6,
-      "block": "minecraft:glass_pane"
+      "z": 2,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
-      "y": 4,
-      "z": 7,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 4,
-      "z": 7,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 4,
-      "y": 4,
-      "z": 8,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 4,
-      "z": 8,
+      "y": 5,
+      "z": 0,
       "block": "minecraft:glass_pane"
     },
     {
       "x": 4,
       "y": 5,
-      "z": 4,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 5,
-      "z": 4,
-      "block": "minecraft:glass_pane"
+      "z": 1,
+      "block": "minecraft:air"
     },
     {
       "x": 4,
       "y": 5,
-      "z": 5,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 5,
-      "z": 5,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 4,
-      "y": 5,
-      "z": 6,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 5,
-      "z": 6,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 4,
-      "y": 5,
-      "z": 7,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 5,
-      "z": 7,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 4,
-      "y": 5,
-      "z": 8,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 5,
-      "y": 5,
-      "z": 8,
-      "block": "minecraft:glass_pane"
-    },
-    {
-      "x": 1,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 2,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 3,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 6,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 7,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 1,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 1,
-      "y": 1,
       "z": 2,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 2,
-      "y": 1,
-      "z": 2,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 3,
-      "y": 1,
-      "z": 2,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 2,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 2,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 6,
-      "y": 1,
-      "z": 2,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 7,
-      "y": 1,
-      "z": 2,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 2,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 1,
-      "y": 1,
-      "z": 3,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 2,
-      "y": 1,
-      "z": 3,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 3,
-      "y": 1,
-      "z": 3,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 3,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 3,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 6,
-      "y": 1,
-      "z": 3,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 7,
-      "y": 1,
-      "z": 3,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 3,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 1,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 2,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 3,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 6,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 7,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 4,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 1,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 2,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 3,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 6,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 7,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 5,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 1,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 2,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 3,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 6,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 7,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 6,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 1,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 2,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 3,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 6,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 7,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 7,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 1,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 2,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 3,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 5,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 6,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 7,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 8,
-      "y": 1,
-      "z": 8,
-      "block": "minecraft:fireplace"
-    },
-    {
-      "x": 1,
-      "y": 2,
-      "z": 1,
-      "block": "minecraft:enchanting_table"
+      "block": "minecraft:air"
     }
   ]
 }
