@@ -1,6 +1,7 @@
 package com.davisodom.villages;
 
 import com.davisodom.villages.command.BlueprintSaveCommand;
+import com.davisodom.villages.network.NetworkHandler;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -94,12 +95,16 @@ public class Villages {
         // Some common setup code
         LOGGER.info("HELLO FROM COMMON SETUP");
 
+        // Register network handler
+        NetworkHandler.register();
+
         if (Config.logDirtBlock)
             LOGGER.info("DIRT BLOCK >> {}", ForgeRegistries.BLOCKS.getKey(Blocks.DIRT));
 
         LOGGER.info(Config.magicNumberIntroduction + Config.magicNumber);
 
         MinecraftForge.EVENT_BUS.register(new BlueprintSelectionHandler());
+        MinecraftForge.EVENT_BUS.register(new KeyBindHandler());
 
         Config.items = new HashSet<>(); // Ensure this is not null
         Config.items.forEach((item) -> LOGGER.info("ITEM >> {}", item.toString()));
@@ -174,7 +179,6 @@ public class Villages {
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            // Some client setup code
             LOGGER.info("HELLO FROM CLIENT SETUP");
             LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
         }
