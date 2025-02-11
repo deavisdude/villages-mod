@@ -11,7 +11,6 @@ import net.minecraftforge.fml.DistExecutor;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Comparator;
 
 public class VillageResponsePacket {
     private final List<BlockPos> villagePositions;

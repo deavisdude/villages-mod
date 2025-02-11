@@ -10,8 +10,6 @@ import net.minecraftforge.network.SimpleChannel;
 import java.lang.reflect.Constructor;
 
 public class NetworkHandler {
-    private static final String PROTOCOL_VERSION = "1";
-    
     // Helper method using reflection to access the non-public two-argument constructor.
     private static ResourceLocation createResourceLocation(String namespace, String path) {
         try {

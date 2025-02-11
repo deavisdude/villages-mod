@@ -59,7 +59,6 @@ public class Blueprint {
     }
 
     public static Blueprint loadFromJson(Reader reader) throws IOException {
-        Gson gson = new Gson();
         JsonObject jsonObject = JsonParser.parseReader(reader).getAsJsonObject();
 
         String name = jsonObject.get("name").getAsString();
