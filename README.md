@@ -14,7 +14,7 @@ A Minecraft mod that completely overhauls villages with custom buildings and imp
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/villages-mod.git
+   git clone https://github.com/deavisdude/villages-mod.git
    cd villages-mod
    ```
 
