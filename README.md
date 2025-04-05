@@ -5,6 +5,7 @@ A Minecraft mod that completely overhauls villages with custom buildings and imp
 ## Table of Contents
 - [Setup](#setup)
 - [Running the Project](#running-the-project)
+- [Features](#features)
 - [Blueprint System](#blueprint-system)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
@@ -52,11 +53,29 @@ To build a distributable JAR file:
 
 The compiled mod JAR will be available in `build/libs/`.
 
-## Blueprint System
+## Features
+
+### Village Finder
+
+The mod includes a village finder feature that allows players to locate nearby villages:
+
+- Press the `V` key to find villages near your current position
+- The mod will display a list of villages sorted by distance, including:
+  - Distance to the village
+  - Direction to the village
+  - Coordinates of the village
+
+The village finder has been optimized for performance:
+- Client-side throttling prevents excessive server requests
+- Position-aware caching only sends new requests when moving a significant distance
+- Server-side caching for village locations reduces computational load
+- Asynchronous processing to prevent server lag
+
+### Blueprint System
 
 This mod includes a blueprint system that allows you to store building blueprints in JSON format and use them to generate villages.
 
-### Adding Custom Blueprints
+#### Adding Custom Blueprints
 
 To add a custom blueprint, follow these steps:
 
@@ -88,7 +107,7 @@ To add a custom blueprint, follow these steps:
 
 3. Save the JSON file and restart the game. The new blueprint will be loaded and used to generate villages.
 
-### Blueprint Format Details
+#### Blueprint Format Details
 
 - `name`: Unique identifier for the blueprint
 - `width`, `height`, `length`: Dimensions of the blueprint
@@ -97,7 +116,7 @@ To add a custom blueprint, follow these steps:
   - `block`: Block ID (must be a valid Minecraft block ID)
   - `properties` (optional): Block properties as key-value pairs
 
-### Generating Blueprints from Existing Structures
+#### Generating Blueprints from Existing Structures
 
 You can use the in-game tools to convert existing structures to blueprints:
 
