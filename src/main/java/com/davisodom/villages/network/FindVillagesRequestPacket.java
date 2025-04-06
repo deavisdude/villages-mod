@@ -15,9 +15,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
+import com.mojang.logging.LogUtils;
 
 public class FindVillagesRequestPacket {
+    private static final Logger LOGGER = LogUtils.getLogger();
+    
     // Cache for village positions (server-side)
     private static final Map<ServerLevel, Map<ChunkPos, List<BlockPos>>> villageCache = new HashMap<>();
     private static final Map<ServerLevel, Long> cacheTimestamps = new HashMap<>();
@@ -195,5 +200,45 @@ public class FindVillagesRequestPacket {
         }
         
         return villages;
+    }
+    
+    /**
+     * Clears cached data for a specific level when it's unloaded
+     * to prevent memory leaks on long-running servers.
+     *
+     * @param level The server level being unloaded
+     */
+    public static void clearCacheForLevel(ServerLevel level) {
+        if (level == null) {
+            return;
+        }
+        
+        Map<ChunkPos, List<BlockPos>> removed = villageCache.remove(level);
+        Long timestamp = cacheTimestamps.remove(level);
+        
+        if (removed != null || timestamp != null) {
+            LOGGER.debug("Cleared village cache for unloaded level: {}", 
+                level.dimension().location());
+        }
+    }
+    
+    /**
+     * Performs a cleanup of all expired cache entries.
+     * Can be called periodically to ensure memory doesn't grow too much.
+     */
+    public static void cleanupExpiredCaches() {
+        long currentTime = System.currentTimeMillis();
+        long maxAge = CACHE_DURATION * 2; // Clear entries older than twice the cache duration
+        
+        Iterator<Map.Entry<ServerLevel, Long>> it = cacheTimestamps.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<ServerLevel, Long> entry = it.next();
+            if (currentTime - entry.getValue() > maxAge) {
+                villageCache.remove(entry.getKey());
+                it.remove();
+                LOGGER.debug("Cleared expired village cache for level: {}", 
+                    entry.getKey().dimension().location());
+            }
+        }
     }
 }
