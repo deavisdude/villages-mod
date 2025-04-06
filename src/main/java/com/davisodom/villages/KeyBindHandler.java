@@ -61,8 +61,7 @@ public class KeyBindHandler {
                     );
                 } else {
                     // Calculate remaining time
-                    long remainingTime = Math.max(0, (nextAvailableRequestTime - currentTime) / 1000);
-                    
+                    double remainingTime = Math.max(0, (nextAvailableRequestTime - currentTime) / 1000.0);
                     if (!hasMoved) {
                         // Player hasn't moved enough
                         player.displayClientMessage(
