@@ -24,7 +24,7 @@ public class FindVillagesRequestPacket {
     private static final Logger LOGGER = LogUtils.getLogger();
     
     // Cache for village positions (server-side)
-    private static final Map<ServerLevel, Map<ChunkPos, List<BlockPos>>> villageCache = new HashMap<>();
+    private static final Map<ServerLevel, Map<ChunkPos, List<BlockPos>>> villageCache = new ConcurrentHashMap<>();
     private static final Map<ServerLevel, Long> cacheTimestamps = new HashMap<>();
     private static final long CACHE_DURATION = 60000; // Cache valid for 1 minute
     
