@@ -66,7 +66,7 @@ public class KeyBindHandler {
                     if (!hasMoved) {
                         // Player hasn't moved enough
                         player.displayClientMessage(
-                            Component.literal("Move at least " + Math.sqrt(POSITION_THRESHOLD) + " blocks to search again.")
+                            Component.literal("Move at least " + POSITION_THRESHOLD + " blocks to search again.")
                                 .withStyle(ChatFormatting.GRAY),
                             false
                         );
