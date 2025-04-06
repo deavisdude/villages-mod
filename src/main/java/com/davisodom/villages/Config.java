@@ -46,6 +46,10 @@ public class Config {
             .comment("Whether to log blueprints on common setup")
             .define("logBlueprints", true);
 
+    private static final ForgeConfigSpec.IntValue VILLAGE_SEARCH_RADIUS = BUILDER
+            .comment("The radius (in blocks) to search for villages around the player")
+            .defineInRange("villageSearchRadius", 1000, 100, 10000);
+
     static final ForgeConfigSpec SPEC = BUILDER.build();
 
     public static boolean logDirtBlock;
@@ -54,6 +58,7 @@ public class Config {
     public static Set<Item> items;
     public static boolean logBlueprints;
     public static boolean enableBlueprintSaving;
+    public static int villageSearchRadius;
 
     private static boolean validateItemName(final Object obj) {
         return obj instanceof final String itemName && ForgeRegistries.ITEMS.containsKey(ResourceLocation.tryParse(itemName));
@@ -86,6 +91,9 @@ public class Config {
         
         enableBlueprintSaving = ENABLE_BLUEPRINT_SAVING.get();
         LOGGER.info("Blueprint saving enabled set to: {}", enableBlueprintSaving);
+
+        villageSearchRadius = VILLAGE_SEARCH_RADIUS.get();
+        LOGGER.info("Village search radius set to: {}", villageSearchRadius);
 
         // convert the list of strings into a set of items
         items = ITEM_STRINGS.get().stream()
