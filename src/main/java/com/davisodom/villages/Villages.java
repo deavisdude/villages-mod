@@ -2,6 +2,7 @@ package com.davisodom.villages;
 
 import com.davisodom.villages.command.BlueprintSaveCommand;
 import com.davisodom.villages.network.NetworkHandler;
+import com.davisodom.villages.worldgen.VillageReplacer;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -109,9 +110,11 @@ public class Villages {
         Config.items = new HashSet<>(); // Ensure this is not null
         Config.items.forEach((item) -> LOGGER.info("ITEM >> {}", item.toString()));
 
-        // Load blueprints and generate villages
+        // Load blueprints
         List<Blueprint> blueprints = loadBlueprints();
-        generateVillage(blueprints);
+        
+        // Register blueprints with the village replacer
+        VillageReplacer.registerBlueprints(blueprints);
     }
 
     private List<Blueprint> loadBlueprints() {
@@ -122,22 +125,15 @@ public class Villages {
             try (InputStream is = getClass().getClassLoader().getResourceAsStream("blueprints/" + blueprintFile)) {
                 if (is != null) {
                     blueprints.add(Blueprint.loadFromJson(new InputStreamReader(is)));
+                    LOGGER.info("Successfully loaded blueprint: {}", blueprintFile);
                 } else {
-                    LOGGER.error("Blueprint resource not found: " + blueprintFile);
+                    LOGGER.error("Blueprint resource not found: {}", blueprintFile);
                 }
             } catch (IOException e) {
-                LOGGER.error("Failed to load blueprint from resource: " + blueprintFile, e);
+                LOGGER.error("Failed to load blueprint from resource: {}", blueprintFile, e);
             }
         }
         return blueprints;
-    }
-
-    private void generateVillage(List<Blueprint> blueprints) {
-        // Placeholder for village generation logic using blueprints
-        blueprints.forEach(blueprint -> {
-            LOGGER.info("Generating village using blueprint: " + blueprint.getName());
-            // Add village generation logic here
-        });
     }
 
     // Add the example block item to the building blocks tab
@@ -150,28 +146,6 @@ public class Villages {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("HELLO from server starting");
-        
-        // Get the overworld (assumes Level.OVERWORLD is used)
-        ServerLevel world = event.getServer().getLevel(Level.OVERWORLD);
-        if (world != null) {
-            // Load the blueprints (example_blueprint.json)
-            List<Blueprint> blueprints = loadBlueprints();
-            if (!blueprints.isEmpty()) {
-                // Use the first blueprint as the village blueprint
-                Blueprint blueprint = blueprints.get(0);
-                BlockPos spawn = world.getSharedSpawnPos();
-                LOGGER.info("Generating village using blueprint: " + blueprint.getName() + " at spawn " + spawn);
-                // Place each block from the blueprint relative to spawn
-                blueprint.getBlockData().forEach(info -> {
-                    BlockPos target = spawn.offset(info.pos());
-                    world.setBlock(target, info.state(), 3);
-                });
-            } else {
-                LOGGER.error("No blueprints loaded, village generation aborted.");
-            }
-        } else {
-            LOGGER.error("Overworld not found, village generation aborted.");
-        }
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
