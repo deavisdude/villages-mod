@@ -526,13 +526,19 @@ public class VillageReplacer {
                     for (int y = lowestY; y < highestY; y++) {
                         BlockPos pos = new BlockPos(center.getX() + x, y, center.getZ() + z);
                         
-                        try {
-                            Block block = level.getBlockState(pos).getBlock();
+                        try {                            Block block = level.getBlockState(pos).getBlock();
                             boolean isAirBlock = level.getBlockState(pos).isAir();
                             boolean isBedrockBlock = level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.BEDROCK);
                             boolean isNaturalBlock = naturalBlocks.contains(block);
                             boolean isVillageBlock = villageSpecificBlocks.contains(block);
                             boolean isWaterBlock = block == net.minecraft.world.level.block.Blocks.WATER;
+                            boolean isClayBlock = block == net.minecraft.world.level.block.Blocks.CLAY;
+                            
+                            // Skip clay blocks for now, we'll handle them in a separate pass
+                            // This ensures we only remove clay that's part of village structures
+                            if (isClayBlock) {
+                                continue;
+                            }
                             
                             // Only remove blocks that are either:
                             // 1. Village-specific blocks
@@ -570,10 +576,77 @@ public class VillageReplacer {
             LOGGER.error("ASYNC SCAN: Error during main area scan: {}", e.getMessage());
             e.printStackTrace();
         }
-        
-        // Final summary log
+          // Final summary log
         LOGGER.info("ASYNC SCAN: Complete scan summary - found {} blocks in main area + {} village-specific blocks in extended area ({} total)", 
             totalToRemove, extendedToRemove, toClear.size());
+        
+        // STEP 3: Additional pass to handle clay blocks
+        // Only remove clay blocks that are touching non-clay blocks marked for deletion
+        // This ensures we only remove clay used in village structures
+        int clayBlocksRemoved = 0;
+        List<BlockPos> clayBlocksToRemove = new ArrayList<>();
+        
+        try {
+            LOGGER.info("ASYNC SCAN: Starting clay detection pass");
+            
+            // First collect all clay blocks in the area
+            List<BlockPos> allClayBlocks = new ArrayList<>();
+            for (int x = -width / 2; x < width / 2; x++) {
+                for (int z = -length / 2; z < length / 2; z++) {
+                    for (int y = Math.max(center.getY() - 15, 1); y < Math.min(center.getY() + height, 320); y++) {
+                        BlockPos pos = new BlockPos(center.getX() + x, y, center.getZ() + z);
+                        try {
+                            Block block = level.getBlockState(pos).getBlock();
+                            if (block == net.minecraft.world.level.block.Blocks.CLAY) {
+                                allClayBlocks.add(pos);
+                            }
+                        } catch (Exception e) {
+                            // Skip positions that cause errors
+                        }
+                    }
+                }
+            }
+            
+            LOGGER.info("ASYNC SCAN: Found {} clay blocks to check", allClayBlocks.size());
+            
+            // Check each clay block to see if it's touching a non-clay block marked for removal
+            for (BlockPos clayPos : allClayBlocks) {
+                // Check neighboring blocks
+                boolean touchingVillageBlock = false;
+                
+                // Check all 6 adjacent blocks
+                for (int[] offset : new int[][]{{1,0,0}, {-1,0,0}, {0,1,0}, {0,-1,0}, {0,0,1}, {0,0,-1}}) {
+                    BlockPos neighbor = clayPos.offset(offset[0], offset[1], offset[2]);
+                    
+                    // If a neighboring non-clay block is marked for removal, mark this clay block too
+                    if (toClear.contains(neighbor) && 
+                        level.getBlockState(neighbor).getBlock() != net.minecraft.world.level.block.Blocks.CLAY) {
+                        touchingVillageBlock = true;
+                        break;
+                    }
+                }
+                
+                // If this clay block is touching a non-clay block marked for removal, mark it too
+                if (touchingVillageBlock) {
+                    clayBlocksToRemove.add(clayPos);
+                    clayBlocksRemoved++;
+                    
+                    // Log progress at intervals
+                    if (clayBlocksRemoved % 100 == 0) {
+                        LOGGER.debug("ASYNC SCAN: Found {} clay blocks to remove so far", clayBlocksRemoved);
+                    }
+                }
+            }
+            
+            // Add all identified clay blocks to the main removal list
+            toClear.addAll(clayBlocksToRemove);
+            
+            LOGGER.info("ASYNC SCAN: Marked {} out of {} clay blocks for removal (part of village structures)", 
+                clayBlocksRemoved, allClayBlocks.size());
+        } catch (Exception e) {
+            LOGGER.error("ASYNC SCAN: Error during clay detection: {}", e.getMessage());
+            e.printStackTrace();
+        }
         
         return toClear;
     }
@@ -883,10 +956,18 @@ public class VillageReplacer {
         int batchSize = 500;
         for (int i = 0; i < toClear.size(); i += batchSize) {
             int endIdx = Math.min(i + batchSize, toClear.size());
-            List<BlockPos> batch = toClear.subList(i, endIdx);
-
-            for (BlockPos pos : batch) {
-                level.removeBlock(pos, false);
+            List<BlockPos> batch = toClear.subList(i, endIdx);            for (BlockPos pos : batch) {
+                Block block = level.getBlockState(pos).getBlock();
+                
+                // Special handling for path blocks to avoid terrain divots
+                if (block == net.minecraft.world.level.block.Blocks.DIRT_PATH) {
+                    // Find the most common surrounding terrain block to replace the path with
+                    Block replacementBlock = findSurroundingTerrainBlock(level, pos);
+                    level.setBlock(pos, replacementBlock.defaultBlockState(), 3);
+                } else {
+                    // Regular removal for non-path blocks
+                    level.removeBlock(pos, false);
+                }
                 removed++;
             }
 
@@ -1047,6 +1128,75 @@ public class VillageReplacer {
     }
     
     /**
+     * Find the most common surrounding terrain block to replace a path with.
+     * This helps maintain terrain consistency by replacing paths with appropriate terrain.
+     */
+    private static Block findSurroundingTerrainBlock(ServerLevel level, BlockPos pos) {
+        // Check surrounding blocks to determine the most common terrain type
+        Map<Block, Integer> surroundingBlockCounts = new HashMap<>();
+        
+        // Most common natural terrain blocks to search for
+        Block[] naturalTerrainBlocks = {
+            net.minecraft.world.level.block.Blocks.GRASS_BLOCK,
+            net.minecraft.world.level.block.Blocks.DIRT,
+            net.minecraft.world.level.block.Blocks.COARSE_DIRT,
+            net.minecraft.world.level.block.Blocks.PODZOL,
+            net.minecraft.world.level.block.Blocks.SAND, 
+            net.minecraft.world.level.block.Blocks.RED_SAND,
+            net.minecraft.world.level.block.Blocks.GRAVEL
+        };
+        
+        // Count occurrences of terrain blocks in a wider radius
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                // Skip checking the center block (which is the path)
+                if (dx == 0 && dz == 0) continue;
+                
+                // Check blocks at the same level and one below (for proper terrain matching)
+                for (int dy = -1; dy <= 0; dy++) {
+                    BlockPos checkPos = pos.offset(dx, dy, dz);
+                    Block checkBlock = level.getBlockState(checkPos).getBlock();
+                    
+                    // Only count natural terrain blocks
+                    for (Block naturalBlock : naturalTerrainBlocks) {
+                        if (checkBlock == naturalBlock) {
+                            surroundingBlockCounts.put(checkBlock, 
+                                surroundingBlockCounts.getOrDefault(checkBlock, 0) + 1);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Find the most common terrain block
+        Block mostCommonBlock = net.minecraft.world.level.block.Blocks.GRASS_BLOCK; // Default to grass if nothing found
+        int highestCount = 0;
+        
+        for (Map.Entry<Block, Integer> entry : surroundingBlockCounts.entrySet()) {
+            if (entry.getValue() > highestCount) {
+                highestCount = entry.getValue();
+                mostCommonBlock = entry.getKey();
+            }
+        }
+        
+        // If we didn't find any surrounding terrain blocks, check what's directly underneath
+        if (highestCount == 0) {
+            BlockPos belowPos = pos.below();
+            Block belowBlock = level.getBlockState(belowPos).getBlock();
+            
+            // If below is a natural terrain block, use that
+            for (Block naturalBlock : naturalTerrainBlocks) {
+                if (belowBlock == naturalBlock) {
+                    return naturalBlock;
+                }
+            }
+        }
+        
+        return mostCommonBlock;
+    }
+        
+    /**
      * Called when a level is unloaded, cleans up our cache
      */
     @SubscribeEvent
@@ -1099,8 +1249,8 @@ public class VillageReplacer {
         pendingReplacements.addAll(villages);
         
         // Log that we've sorted villages by player proximity
-        if (!villages.isEmpty()) {
-            LOGGER.info("VILLAGE PRIORITY: Sorted {} villages by player proximity", villages.size());
-        }
+        // if (!villages.isEmpty()) {
+        //     LOGGER.debug("VILLAGE PRIORITY: Sorted {} villages by player proximity", villages.size());
+        // }
     }
 }
