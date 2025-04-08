@@ -9,22 +9,27 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 
 /**
@@ -47,6 +52,23 @@ public class VillageReplacer {
     // Queue of village replacements to perform
     private static final Queue<VillageReplacement> pendingReplacements = new ConcurrentLinkedQueue<>();
     
+    // Dedicated thread pool for processing village clearing operations
+    private static final Executor VILLAGE_CLEARING_EXECUTOR = Executors.newFixedThreadPool(
+        Math.max(1, Runtime.getRuntime().availableProcessors() / 2),
+        new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r, "Village-Clearer-" + threadNumber.getAndIncrement());
+                thread.setDaemon(true); // Mark as daemon so it doesn't prevent app shutdown
+                return thread;
+            }
+        }
+    );
+    
+    // Track ongoing clearing operations
+    private static final Map<BlockPos, CompletableFuture<List<BlockPos>>> ongoingClearingOperations = new ConcurrentHashMap<>();
+    
     // Limit how many chunks we process per tick to avoid lag
     private static final int MAX_CHUNKS_PER_TICK = 5;
     
@@ -66,6 +88,8 @@ public class VillageReplacer {
         private final ServerLevel level;
         private final BlockPos center;
         private final Blueprint blueprint;
+        private boolean clearingStarted = false;
+        private boolean clearingComplete = false;
         
         public VillageReplacement(ServerLevel level, BlockPos center, Blueprint blueprint) {
             this.level = level;
@@ -167,23 +191,34 @@ public class VillageReplacer {
             }
         }
         
-        if (processedCount > 0) {
-            LOGGER.debug("Processed {} chunks for village detection", processedCount);
-        }
+        // if (processedCount > 0) {
+        //     LOGGER.debug("Processed {} chunks for village detection", processedCount);
+        // }
     }
     
     /**
      * Process pending village replacements
      */
     private static void processReplacementQueue() {
-        int replacedCount = 0;
+        // if (!pendingReplacements.isEmpty()) {
+        //     LOGGER.debug("Processing {} pending village replacements", pendingReplacements.size());
+        // }
         
-        if (!pendingReplacements.isEmpty()) {
-            LOGGER.info("Processing {} pending village replacements", pendingReplacements.size());
+        // Process ongoing clearing operations first
+        processOngoingClearingOperations();
+        
+        // Only start new replacements if we're under the limit
+        int activeReplacements = ongoingClearingOperations.size();
+        int availableSlots = MAX_REPLACEMENTS_PER_TICK - activeReplacements;
+        
+        // If we have any available slots and enough villages to process, sort them by player proximity
+        if (availableSlots > 0 && pendingReplacements.size() > 1) {
+            sortVillageReplacementsByPlayerProximity();
         }
         
-        for (int i = 0; i < MAX_REPLACEMENTS_PER_TICK && !pendingReplacements.isEmpty(); i++) {
-            VillageReplacement replacement = pendingReplacements.poll();
+        // Process new replacements if we have available slots
+        for (int i = 0; i < availableSlots && !pendingReplacements.isEmpty(); i++) {
+            VillageReplacement replacement = pendingReplacements.peek(); // Just peek, don't remove yet
             if (replacement != null) {
                 try {
                     // Skip if already replaced
@@ -195,26 +230,413 @@ public class VillageReplacer {
                     );
                     
                     if (!levelReplaced.getOrDefault(key, Boolean.FALSE)) {
-                        LOGGER.info("REPLACING VILLAGE: Starting replacement of village at {} with blueprint '{}'", 
-                            replacement.center, replacement.blueprint.getName());
-                        replaceVillage(replacement.level, replacement.center, replacement.blueprint);
-                        levelReplaced.put(key, Boolean.TRUE);
-                        replacedCount++;
-                        LOGGER.info("VILLAGE REPLACED: Successfully replaced village at {} with blueprint '{}'", 
-                            replacement.center, replacement.blueprint.getName());
+                        if (!replacement.clearingStarted) {
+                            // Start asynchronous clearing process
+                            startAsyncVillageClearingAndReplacement(replacement);
+                            replacement.clearingStarted = true;
+                            // Keep in queue until clearing is complete
+                        } else if (replacement.clearingComplete) {
+                            // Clearing is done, finalize replacement
+                            pendingReplacements.poll(); // Now remove from queue
+                            levelReplaced.put(key, Boolean.TRUE);
+                        }
                     } else {
+                        // Already replaced, remove from queue
+                        pendingReplacements.poll();
                         LOGGER.debug("Skipping already replaced village at {}", replacement.center);
                     }
                 } catch (Exception e) {
+                    // Remove from queue on error
+                    pendingReplacements.poll();
                     LOGGER.error("ERROR REPLACING VILLAGE: Failed at {}: {}", replacement.center, e.getMessage());
-                    // Print full stack trace for debugging
                     e.printStackTrace();
                 }
             }
         }
+    }
+    
+    /**
+     * Process ongoing clearing operations and apply the results when done
+     */
+    private static void processOngoingClearingOperations() {
+        if (ongoingClearingOperations.isEmpty()) {
+            return;
+        }
         
-        if (replacedCount > 0) {
-            LOGGER.info("REPLACEMENT SUMMARY: Replaced {} villages with blueprints this tick", replacedCount);
+        // Check for completed futures
+        Iterator<Map.Entry<BlockPos, CompletableFuture<List<BlockPos>>>> iterator = 
+            ongoingClearingOperations.entrySet().iterator();
+        
+        while (iterator.hasNext()) {
+            Map.Entry<BlockPos, CompletableFuture<List<BlockPos>>> entry = iterator.next();
+            BlockPos villageCenter = entry.getKey();
+            CompletableFuture<List<BlockPos>> future = entry.getValue();
+            
+            if (future.isDone()) {
+                try {
+                    // Get the blocks to clear
+                    List<BlockPos> blocksToRemove = future.get();
+                    
+                    // Find the corresponding replacement in the queue
+                    for (VillageReplacement replacement : pendingReplacements) {
+                        if (replacement.center.equals(villageCenter)) {
+                            // Apply the clearing on the main thread using small batches
+                            int batchSize = 100; // Reduce batch size since we're on main thread
+                            int removed = 0;
+                            boolean allRemoved = false;
+                            
+                            // Create a thread-safe list of positions to process
+                            List<BlockPos> remainingBlocks = new ArrayList<>(blocksToRemove);
+                            
+                            // Process a small batch for this tick
+                            int endIdx = Math.min(batchSize, remainingBlocks.size());
+                            if (endIdx > 0) {
+                                List<BlockPos> batch = remainingBlocks.subList(0, endIdx);
+                                
+                                // Remove blocks in this batch
+                                for (BlockPos pos : batch) {
+                                    replacement.level.removeBlock(pos, false);
+                                    removed++;
+                                }
+                                
+                                // Update the list for next tick
+                                remainingBlocks.subList(0, endIdx).clear();
+                            }
+                            
+                            if (remainingBlocks.isEmpty()) {
+                                // All done, mark as complete
+                                LOGGER.info("ASYNC CLEARING: Complete - Removed all {} blocks for village at {}", 
+                                    blocksToRemove.size(), villageCenter);
+                                
+                                // Now place the blueprint
+                                placeBlueprint(replacement);
+                                
+                                replacement.clearingComplete = true;
+                                allRemoved = true;
+                            } else {
+                                // Still have more blocks to remove, update the future with remaining blocks
+                                LOGGER.debug("ASYNC CLEARING: Progress - Removed {}/{} blocks for village at {} ({}%)",
+                                    removed, blocksToRemove.size(),
+                                    villageCenter, (removed * 100 / blocksToRemove.size()));
+                                
+                                // Create a new future for the remaining blocks
+                                CompletableFuture<List<BlockPos>> newFuture = CompletableFuture.completedFuture(remainingBlocks);
+                                ongoingClearingOperations.put(villageCenter, newFuture);
+                            }
+                            
+                            if (allRemoved) {
+                                // Remove the entry from the map
+                                iterator.remove();
+                            }
+                            
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Error processing async clearing for village at {}: {}", villageCenter, e.getMessage());
+                    iterator.remove();
+                }
+            }
+        }
+    }
+    
+    /**
+     * Start async village clearing and replacement process
+     */
+    private static void startAsyncVillageClearingAndReplacement(VillageReplacement replacement) {
+        LOGGER.info("ASYNC CLEARING: Starting async clearing for village at {}", replacement.center);
+        
+        // Kill all villagers in this area first
+        killVillagersInArea(replacement.level, replacement.center, 128);
+        
+        // Use sea level instead of detected ground level to handle varied terrain better
+        int seaLevel = 63; // Standard Minecraft sea level
+        BlockPos seaLevelCenter = new BlockPos(replacement.center.getX(), seaLevel, replacement.center.getZ());
+        
+        LOGGER.info("ASYNC CLEARING: Using sea level (Y={}) as reference for village at {}", seaLevel, replacement.center);
+        
+        // Define clearing area dimensions with increased radius (128 blocks) as requested
+        int padding = 25;
+        int width = replacement.blueprint.getWidth() + padding * 2;
+        int height = 50;
+        int length = replacement.blueprint.getLength() + padding * 2;
+        
+        // Start the async scanning process
+        CompletableFuture<List<BlockPos>> clearingFuture = CompletableFuture.supplyAsync(() -> {
+            return scanVillageAreaAsync(replacement.level, seaLevelCenter, width, height, length);
+        }, VILLAGE_CLEARING_EXECUTOR);
+        
+        // Store the future for later processing
+        ongoingClearingOperations.put(replacement.center, clearingFuture);
+    }
+    
+    /**
+     * Kill all villagers in the given area
+     * This ensures no villagers remain after village replacement
+     */
+    private static void killVillagersInArea(ServerLevel level, BlockPos center, int radius) {
+        LOGGER.info("VILLAGER REMOVAL: Removing all villagers in {} block radius around {}", radius, center);
+        
+        try {
+            // Use AABB (axis-aligned bounding box) to select all entities in the area
+            net.minecraft.world.phys.AABB searchArea = new net.minecraft.world.phys.AABB(
+                center.getX() - radius, center.getY() - 30, center.getZ() - radius,
+                center.getX() + radius, center.getY() + 30, center.getZ() + radius
+            );
+            
+            // Get all villager entities in the area
+            List<net.minecraft.world.entity.npc.Villager> villagers = level.getEntitiesOfClass(
+                net.minecraft.world.entity.npc.Villager.class, searchArea
+            );
+            
+            if (!villagers.isEmpty()) {
+                LOGGER.info("VILLAGER REMOVAL: Found {} villagers to remove", villagers.size());
+                
+                // Remove all villagers
+                for (net.minecraft.world.entity.npc.Villager villager : villagers) {
+                    villager.remove(net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
+                }
+                
+                LOGGER.info("VILLAGER REMOVAL: Successfully removed {} villagers", villagers.size());
+            } else {
+                LOGGER.info("VILLAGER REMOVAL: No villagers found in the area");
+            }
+            
+            // Remove Iron Golems in the area
+            List<net.minecraft.world.entity.animal.IronGolem> ironGolems = level.getEntitiesOfClass(
+                net.minecraft.world.entity.animal.IronGolem.class, searchArea
+            );
+            
+            if (!ironGolems.isEmpty()) {
+                LOGGER.info("VILLAGER REMOVAL: Found {} iron golems to remove", ironGolems.size());
+                
+                // Remove all iron golems
+                for (net.minecraft.world.entity.animal.IronGolem golem : ironGolems) {
+                    golem.remove(net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
+                }
+                
+                LOGGER.info("VILLAGER REMOVAL: Successfully removed {} iron golems", ironGolems.size());
+            } else {
+                LOGGER.info("VILLAGER REMOVAL: No iron golems found in the area");
+            }
+            
+            // Also remove wandering traders in the area
+            List<net.minecraft.world.entity.npc.WanderingTrader> traders = level.getEntitiesOfClass(
+                net.minecraft.world.entity.npc.WanderingTrader.class, searchArea
+            );
+            
+            if (!traders.isEmpty()) {
+                LOGGER.info("VILLAGER REMOVAL: Found {} wandering traders to remove", traders.size());
+                
+                // Remove all traders
+                for (net.minecraft.world.entity.npc.WanderingTrader trader : traders) {
+                    trader.remove(net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("VILLAGER REMOVAL: Error removing villagers: {}", e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Asynchronously scan the village area to identify blocks to clear
+     * This runs on a background thread and doesn't modify the world directly
+     */
+    private static List<BlockPos> scanVillageAreaAsync(ServerLevel level, BlockPos center, int width, int height, int length) {
+        List<BlockPos> toClear = new ArrayList<>();
+        
+        // This operation must be thread-safe and not directly modify the world
+        LOGGER.info("ASYNC SCAN: Starting scan of {}x{}x{} area at {}", width, height, length, center);        // Define village-specific blocks to target - using Set to check quickly
+        Set<Block> villageSpecificBlocks = BlockSets.getVillageBlocks();
+        
+        // Define NATURAL blocks that should be preserved - never remove these
+        Set<Block> naturalBlocks = BlockSets.getNaturalBlocks();
+        
+        // Define extended radius for village-specific blocks - reduced to 64 as requested
+        int villageRadius = 64;
+        // STEP 1: Extended scan for village-specific blocks only
+        int extendedToRemove = 0;
+        
+        try {
+            LOGGER.info("ASYNC SCAN: Beginning extended scan with radius {} blocks from center {}", villageRadius, center);
+            
+            // Use Minecraft world height limits - scan all the way to the top of the world
+            int seaLevel = 63; // Standard Minecraft sea level
+            int lowestY = Math.max(seaLevel - 15, 1); // Extend lower to catch basements/foundations
+            int highestY = 320; // Maximum world height in modern Minecraft (will automatically be capped to actual world height)
+            
+            LOGGER.info("ASYNC SCAN: Using extended vertical range from Y={} to Y={}", lowestY, highestY);
+            
+            for (int x = -villageRadius; x < villageRadius; x++) {
+                for (int z = -villageRadius; z < villageRadius; z++) {
+                    // Scan from well below sea level to max world height to catch all structures                    
+                    for (int y = lowestY; y < highestY; y++) {
+                        BlockPos pos = new BlockPos(center.getX() + x, y, center.getZ() + z);
+                        
+                        // Thread-safe check: only add blocks that are village-specific
+                        try {
+                            Block block = level.getBlockState(pos).getBlock();
+                            boolean isVillageBlock = villageSpecificBlocks.contains(block);
+                            boolean isNaturalBlock = naturalBlocks.contains(block);
+                            boolean isWaterBlock = block == net.minecraft.world.level.block.Blocks.WATER;
+                            
+                            // Remove village blocks and artificial water (handled by improved detection)
+                            if (isVillageBlock || (isWaterBlock && BlockSets.isArtificialWater(level, pos))) {
+                                // Don't remove if it's a natural block we want to preserve
+                                if (!isNaturalBlock || (isWaterBlock && BlockSets.isArtificialWater(level, pos))) {
+                                    toClear.add(pos);
+                                    extendedToRemove++;
+                                    
+                                    // Log every 1000 village-specific blocks found
+                                    if (extendedToRemove % 1000 == 0) {
+                                        LOGGER.info("ASYNC SCAN: Found {} village-specific blocks so far in extended scan", 
+                                            extendedToRemove);
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            // Skip positions that cause errors (might be unloaded chunks)
+                        }
+                    }
+                }
+            }
+            
+            LOGGER.info("ASYNC SCAN: Extended scan complete - found {} village-specific blocks in {} block radius", 
+                extendedToRemove, villageRadius);
+        } catch (Exception e) {
+            LOGGER.error("ASYNC SCAN: Error during extended scan: {}", e.getMessage());
+            e.printStackTrace();
+        }
+        
+        // STEP 2: Regular scan for man-made blocks in the main village area
+        int totalToRemove = 0;
+        
+        try {
+            LOGGER.info("ASYNC SCAN: Beginning main area scan with dimensions {}x{}x{}", width, length, height);
+            
+            for (int x = -width / 2; x < width / 2; x++) {
+                for (int z = -length / 2; z < length / 2; z++) {
+                    // Use sea level as reference but scan all the way to world height
+                    int seaLevel = 63;
+                    int lowestY = Math.max(seaLevel - 15, 1);
+                    int highestY = 320; // Max world height to catch all structures
+                    
+                    // Clear from below sea level up to world height
+                    for (int y = lowestY; y < highestY; y++) {
+                        BlockPos pos = new BlockPos(center.getX() + x, y, center.getZ() + z);
+                        
+                        try {
+                            Block block = level.getBlockState(pos).getBlock();
+                            boolean isAirBlock = level.getBlockState(pos).isAir();
+                            boolean isBedrockBlock = level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.BEDROCK);
+                            boolean isNaturalBlock = naturalBlocks.contains(block);
+                            boolean isVillageBlock = villageSpecificBlocks.contains(block);
+                            boolean isWaterBlock = block == net.minecraft.world.level.block.Blocks.WATER;
+                            
+                            // Only remove blocks that are either:
+                            // 1. Village-specific blocks
+                            // 2. Artificial water (using improved detection)
+                            // And make sure we're NOT removing:
+                            // 1. Air blocks
+                            // 2. Bedrock
+                            // 3. Natural terrain blocks
+                            // 4. Natural water sources
+                            if (!isAirBlock && !isBedrockBlock && 
+                                (!isNaturalBlock || (isWaterBlock && BlockSets.isArtificialWater(level, pos))) && 
+                                (isVillageBlock || (isWaterBlock && BlockSets.isArtificialWater(level, pos)))) {
+                                
+                                // Avoid adding duplicates
+                                if (!toClear.contains(pos)) {
+                                    toClear.add(pos);
+                                    totalToRemove++;
+                                    
+                                    // Log progress at intervals
+                                    if (totalToRemove % 5000 == 0) {
+                                        LOGGER.info("ASYNC SCAN: Found {} blocks in main area scan so far", 
+                                            totalToRemove);
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            // Skip positions that cause errors
+                        }
+                    }
+                }
+            }
+            
+            LOGGER.info("ASYNC SCAN: Main area scan complete - found {} blocks to remove", totalToRemove);
+        } catch (Exception e) {
+            LOGGER.error("ASYNC SCAN: Error during main area scan: {}", e.getMessage());
+            e.printStackTrace();
+        }
+        
+        // Final summary log
+        LOGGER.info("ASYNC SCAN: Complete scan summary - found {} blocks in main area + {} village-specific blocks in extended area ({} total)", 
+            totalToRemove, extendedToRemove, toClear.size());
+        
+        return toClear;
+    }
+    
+    /**
+     * Place blueprint blocks after the area has been cleared
+     */
+    private static void placeBlueprint(VillageReplacement replacement) {
+        LOGGER.info("BLUEPRINT PLACEMENT: Starting placement for village at {}", replacement.center);
+        
+        try {
+            // Find ground level for proper placement
+            int groundLevel = findGroundLevelForPlacement(replacement.level, replacement.center);
+            
+            // Create a centered position at ground level for replacement
+            BlockPos groundCenter = new BlockPos(replacement.center.getX(), groundLevel, replacement.center.getZ());
+            
+            // Calculate offsets to center the blueprint on the village center
+            int xOffset = groundCenter.getX() - replacement.blueprint.getWidth() / 2;
+            int zOffset = groundCenter.getZ() - replacement.blueprint.getLength() / 2;
+            
+            LOGGER.info("BLUEPRINT PLACEMENT: Using offset X={}, Z={} at ground level Y={}", 
+                xOffset, zOffset, groundLevel);
+            
+            // Place the blueprint blocks
+            int blockCount = 0;
+            int airBlockCount = 0;
+            
+            // Log blueprint data for debugging
+            LOGGER.info("BLUEPRINT PLACEMENT: Blueprint '{}' contains {} blocks to place", 
+                replacement.blueprint.getName(), replacement.blueprint.getBlockData().size());
+            
+            // Place all blocks from the blueprint
+            for (var info : replacement.blueprint.getBlockData()) {
+                BlockPos target = new BlockPos(
+                    xOffset + info.pos().getX(),
+                    groundLevel + info.pos().getY(), // Use ground level for Y placement
+                    zOffset + info.pos().getZ()
+                );
+                
+                // Skip air blocks for performance unless they're replacing something
+                if (info.state().isAir() && replacement.level.getBlockState(target).isAir()) {
+                    airBlockCount++;
+                    continue;
+                }
+                
+                replacement.level.setBlock(target, info.state(), 3);
+                blockCount++;
+                
+                // Log progress at intervals
+                if (blockCount % 1000 == 0) {
+                    LOGGER.info("BLUEPRINT PLACEMENT: Progress - placed {} of {} blocks", 
+                        blockCount, replacement.blueprint.getBlockData().size() - airBlockCount);
+                }
+            }
+            
+            LOGGER.info("BLUEPRINT PLACEMENT: Complete - placed {} blocks (skipped {} air blocks)", 
+                blockCount, airBlockCount);
+            
+        } catch (Exception e) {
+            LOGGER.error("BLUEPRINT PLACEMENT FAILED: Could not place blueprint at {}: {}", 
+                replacement.center, e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -407,194 +829,71 @@ public class VillageReplacer {
     
     /**
      * Clears the area around a village center to prepare for replacement
-     * Specifically targets village-specific blocks like bells, beds, crops, and workstations.
+     * Specifically targets village-specific blocks and ensures complete removal of all structures.
      */
     private static void clearVillageArea(ServerLevel level, BlockPos center, int width, int height, int length) {
-        LOGGER.info("AREA CLEARING: Beginning clearance of {}x{}x{} area at {}", width, height, length, center);
-        
-        // Use a more efficient approach by storing a list of positions to clear
+        LOGGER.info("AREA CLEARING: Starting enhanced clearance of {}x{}x{} area at {}", width, height, length, center);
+
+        // Use a list to store positions to clear
         List<BlockPos> toClear = new ArrayList<>();
-        
-        // First scan the area to collect all village-specific blocks to clear
-        int totalScanned = 0;
-        int totalToRemove = 0;
-        
-        // Define village-specific blocks to target - using Set to check quickly
-        // Create a set manually for compatibility with older Java versions
+
+        // Define village-specific blocks to target
         Set<Block> villageSpecificBlocks = new HashSet<>();
-        // Add village-specific blocks
         villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BELL);
         villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.WHITE_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.ORANGE_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.MAGENTA_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.LIGHT_BLUE_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.YELLOW_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.LIME_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.PINK_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.GRAY_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.LIGHT_GRAY_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.CYAN_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.PURPLE_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BLUE_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BROWN_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.GREEN_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.RED_BED);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BLACK_BED);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_PLANKS);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.COBBLESTONE);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.DIRT_PATH); // Replacing GRASS_PATH
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.HAY_BLOCK);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_FENCE); // Replacing FENCE
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_FENCE_GATE); // Replacing FENCE_GATE
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.TORCH);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.LANTERN);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.CHEST);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BARREL);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.CRAFTING_TABLE);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.FURNACE);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SMOKER);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BLAST_FURNACE);
+        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.COMPOSTER);
         villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.WHEAT);
         villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.CARROTS);
         villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.POTATOES);
         villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BEETROOTS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.COMPOSTER);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BARREL);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SMITHING_TABLE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.CARTOGRAPHY_TABLE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.FLETCHING_TABLE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.LOOM);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.GRINDSTONE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.STONECUTTER);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BLAST_FURNACE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SMOKER);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.CAMPFIRE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.LANTERN);
-        // Additional village blocks - structural elements
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.ACACIA_DOOR);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.ACACIA_TRAPDOOR);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.ACACIA_FENCE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.ACACIA_FENCE_GATE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.ACACIA_LOG);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.ACACIA_PLANKS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.ACACIA_PRESSURE_PLATE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.ACACIA_SLAB);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.ACACIA_STAIRS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_DOOR);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_TRAPDOOR);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_FENCE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_FENCE_GATE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_LOG);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_PLANKS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_PRESSURE_PLATE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_SLAB);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.OAK_STAIRS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BIRCH_DOOR);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BIRCH_TRAPDOOR);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BIRCH_FENCE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BIRCH_FENCE_GATE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BIRCH_LOG);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BIRCH_PLANKS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BIRCH_PRESSURE_PLATE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BIRCH_SLAB);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BIRCH_STAIRS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SPRUCE_DOOR);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SPRUCE_TRAPDOOR);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SPRUCE_FENCE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SPRUCE_FENCE_GATE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SPRUCE_LOG);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SPRUCE_PLANKS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SPRUCE_PRESSURE_PLATE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SPRUCE_SLAB);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.SPRUCE_STAIRS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.COBBLESTONE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.COBBLESTONE_SLAB);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.COBBLESTONE_STAIRS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.COBBLESTONE_WALL);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.MOSSY_COBBLESTONE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.TORCH);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.WALL_TORCH);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.LADDER);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.CHEST);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.FURNACE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.CRAFTING_TABLE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.GLASS_PANE);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.GLASS);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.HAY_BLOCK);
-        villageSpecificBlocks.add(net.minecraft.world.level.block.Blocks.BOOKSHELF);
-        
-        // Define wider radius for village-specific blocks - let's make this 64 blocks to catch all
-        // village elements that might be outside our normal clearing area
-        int villageRadius = 64;
-        
-        // STEP 1: Extended scan for village-specific blocks only
-        LOGGER.info("AREA CLEARING: Performing extended scan for village-specific blocks in a {} block radius", villageRadius);
-        int extendedScanned = 0;
-        int extendedToRemove = 0;
-        
-        for (int x = -villageRadius; x < villageRadius; x++) {
-            for (int z = -villageRadius; z < villageRadius; z++) {
-                // For extended scan, only check a few blocks above and below ground level
-                int lowestY = Math.max(center.getY() - 5, 1);
-                int highestY = Math.min(center.getY() + 15, 255);
-                
-                for (int y = lowestY; y < highestY; y++) {
-                    extendedScanned++;
+
+        // Scan the area to collect all blocks to clear
+        for (int x = -width / 2; x <= width / 2; x++) {
+            for (int z = -length / 2; z <= length / 2; z++) {
+                for (int y = center.getY() - 10; y <= center.getY() + height; y++) {
                     BlockPos pos = new BlockPos(center.getX() + x, y, center.getZ() + z);
                     Block block = level.getBlockState(pos).getBlock();
-                    
-                    // Only target village-specific blocks in extended area
-                    if (villageSpecificBlocks.contains(block)) {
+
+                    // Add village-specific blocks or any non-air blocks to the list
+                    if (villageSpecificBlocks.contains(block) || !level.getBlockState(pos).isAir()) {
                         toClear.add(pos);
-                        extendedToRemove++;
                     }
                 }
             }
         }
-        
-        LOGGER.info("EXTENDED SCAN: Found {} village-specific blocks in extended {} block radius", 
-                  extendedToRemove, villageRadius);
-        
-        // STEP 2: Regular scan for all blocks in the main village area
-        for (int x = -width / 2; x < width / 2; x++) {
-            for (int z = -length / 2; z < length / 2; z++) {
-                // Clear only above the ground level to preserve terrain
-                // But remove 1-2 layers below ground level to ensure proper foundation
-                int lowestY = Math.max(center.getY() - 2, 1);
-                
-                // Clear from below ground level up to the height limit
-                for (int y = lowestY; y < center.getY() + height; y++) {
-                    totalScanned++;
-                    BlockPos pos = new BlockPos(center.getX() + x, y, center.getZ() + z);
-                    
-                    // Only clear non-air blocks to improve performance
-                    // Also preserve bedrock and any blocks we want to keep
-                    if (!level.getBlockState(pos).isAir() && 
-                        !level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.BEDROCK)) {
-                        // Avoid adding duplicates from extended scan
-                        if (!toClear.contains(pos)) {
-                            toClear.add(pos);
-                            totalToRemove++;
-                        }
-                    }
-                }
-                
-                // Log progress for each "chunk" of blocks scanned
-                if (totalScanned % 10000 == 0) {
-                    LOGGER.debug("AREA CLEARING: Scanning progress - checked {} blocks, found {} to remove", 
-                              totalScanned, totalToRemove);
-                }
-            }
-        }
-        
-        LOGGER.info("AREA CLEARING: Scan complete - found {} blocks in main area + {} village-specific blocks in extended area", 
-                  totalToRemove, extendedToRemove);
-        
-        // Now remove the blocks in batches
+
+        LOGGER.info("AREA CLEARING: Found {} blocks to remove in the enhanced scan", toClear.size());
+
+        // Remove the blocks in batches
         int removed = 0;
-        int batchSize = 1000; // Process in smaller batches for better performance
-        
+        int batchSize = 500;
         for (int i = 0; i < toClear.size(); i += batchSize) {
             int endIdx = Math.min(i + batchSize, toClear.size());
             List<BlockPos> batch = toClear.subList(i, endIdx);
-            
+
             for (BlockPos pos : batch) {
                 level.removeBlock(pos, false);
                 removed++;
             }
-            
-            // Log progress at batch intervals
-            LOGGER.debug("AREA CLEARING: Progress - removed {}/{} blocks ({}%)", 
-                       removed, toClear.size(), (removed * 100 / toClear.size()));
+
+            LOGGER.debug("AREA CLEARING: Progress - removed {}/{} blocks", removed, toClear.size());
         }
-        
-        LOGGER.info("AREA CLEARING: Completed - cleared {} blocks for village replacement", removed);
+
+        LOGGER.info("AREA CLEARING: Completed - removed {} blocks for village replacement", removed);
     }
     
     /**
@@ -617,12 +916,10 @@ public class VillageReplacer {
         // Scan downward to find the ground
         for (int y = startY; y >= endY; y--) {
             BlockPos checkPos = new BlockPos(center.getX(), y, center.getZ());
-            BlockPos belowPos = checkPos.below();
-            
-            // Check if this block is air and the one below is solid
+            BlockPos belowPos = checkPos.below();            // Check if this block is air and the one below is solid
             boolean isAir = level.getBlockState(checkPos).isAir();
             boolean belowIsSolid = !level.getBlockState(belowPos).isAir() && 
-                                  level.getBlockState(belowPos).isSolid();
+                                  level.getBlockState(belowPos).canOcclude();
             
             if (y % 5 == 0 || (isAir && belowIsSolid)) { // Log only every 5 blocks or when we find ground
                 LOGGER.debug("GROUND DETECTION: At Y={}: isAir={}, belowIsSolid={}, block={}", 
@@ -643,6 +940,113 @@ public class VillageReplacer {
     }
     
     /**
+     * Find the most suitable ground level for blueprint placement
+     * Ensures blueprints sit atop naturally occurring grass blocks
+     */
+    private static int findGroundLevelForPlacement(ServerLevel level, BlockPos center) {
+        LOGGER.info("GROUND PLACEMENT: Finding optimal ground level for blueprint at {}", center);
+        
+        // Sample ground levels at multiple points to find the best placement height
+        // with preference for grass blocks
+        int sampleRadius = 15; // Sample in a 30x30 area
+        int sampleCount = 0;
+        int totalHeight = 0;
+        int minHeight = 255;
+        int maxHeight = 0;
+        
+        // Track grass block heights specifically
+        int grassBlockCount = 0;
+        int grassBlockTotalHeight = 0;
+        
+        // Collect ground level samples across the blueprint placement area
+        for (int x = -sampleRadius; x <= sampleRadius; x += 3) { // More samples than before
+            for (int z = -sampleRadius; z <= sampleRadius; z += 3) {
+                BlockPos samplePos = new BlockPos(center.getX() + x, center.getY(), center.getZ() + z);
+                int groundY = findLocalGroundLevel(level, samplePos);
+                
+                if (groundY > 0) {
+                    // Add to general samples
+                    totalHeight += groundY;
+                    sampleCount++;
+                    minHeight = Math.min(minHeight, groundY);
+                    maxHeight = Math.max(maxHeight, groundY);
+                    
+                    // Check if this position has a grass block directly below it
+                    BlockPos belowPos = new BlockPos(samplePos.getX(), groundY - 1, samplePos.getZ());
+                    if (level.getBlockState(belowPos).getBlock() == net.minecraft.world.level.block.Blocks.GRASS_BLOCK) {
+                        grassBlockCount++;
+                        grassBlockTotalHeight += groundY;
+                        LOGGER.debug("GROUND PLACEMENT: Found grass block at Y={}", groundY);
+                    }
+                }
+            }
+        }
+        
+        // If we found some grass blocks, prioritize them for placement height
+        if (grassBlockCount > 0) {
+            int grassAvgHeight = grassBlockTotalHeight / grassBlockCount;
+            LOGGER.info("GROUND PLACEMENT: Found {} grass blocks with average height Y={}", 
+                grassBlockCount, grassAvgHeight);
+            
+            // Use grass blocks as the reference ground level
+            return grassAvgHeight;
+        }
+        
+        // If no grass blocks found, use regular ground level logic
+        if (sampleCount > 0) {
+            int averageHeight = totalHeight / sampleCount;
+            int heightVariation = maxHeight - minHeight;
+            
+            LOGGER.info("GROUND PLACEMENT: Found average ground level Y={} (min={}, max={}, variation={})", 
+                averageHeight, minHeight, maxHeight, heightVariation);
+            
+            // If terrain is very uneven (large variation), prefer higher ground
+            // to avoid burying parts of the blueprint
+            if (heightVariation > 4) {
+                // Use a height closer to the maximum to avoid burying the structure
+                int adjustedHeight = maxHeight - 2;
+                LOGGER.info("GROUND PLACEMENT: Terrain is uneven, adjusted placement height to Y={}", adjustedHeight);
+                return adjustedHeight;
+            }
+            
+            return averageHeight;
+        }
+        
+        // If we failed to find a good average, try a direct ground level check
+        int directGroundLevel = findGroundLevel(level, center);
+        LOGGER.info("GROUND PLACEMENT: Using direct ground level Y={} as fallback", directGroundLevel);
+        return directGroundLevel;
+    }
+    
+    /**
+     * Find ground level at a specific position
+     * This is a helper for the multi-sample ground level detection
+     */
+    private static int findLocalGroundLevel(ServerLevel level, BlockPos pos) {
+        // Start from well above the position
+        int startY = 120; // Start higher to handle mountains
+        
+        // Scan downward to find ground
+        for (int y = startY; y > 40; y--) { // Don't go below Y=40 to avoid caves
+            BlockPos checkPos = new BlockPos(pos.getX(), y, pos.getZ());
+            BlockPos belowPos = checkPos.below();
+            
+            // Find air block with solid block below (ground surface)
+            boolean isAir = level.getBlockState(checkPos).isAir();
+            boolean belowIsSolid = !level.getBlockState(belowPos).isAir() && 
+                                   level.getBlockState(belowPos).canOcclude() &&
+                                   level.getBlockState(belowPos).getFluidState().isEmpty();
+            
+            if (isAir && belowIsSolid) {
+                return y; // Found ground level
+            }
+        }
+        
+        // If we couldn't find proper ground, use sea level as fallback
+        return 63;
+    }
+    
+    /**
      * Called when a level is unloaded, cleans up our cache
      */
     @SubscribeEvent
@@ -650,8 +1054,53 @@ public class VillageReplacer {
         if (event.getLevel() instanceof ServerLevel serverLevel) {
             pendingChunks.remove(serverLevel);
             processedChunks.remove(serverLevel);
-            replacedVillages.remove(serverLevel);
+            replacedVillages.remove(serverLevel);            
             LOGGER.debug("Cleared caches for unloaded level: {}", serverLevel.dimension().location());
+        }
+    }
+    
+    /**
+     * Sorts the pending village replacements based on proximity to players
+     * This ensures villages closest to players are processed first
+     */
+    private static void sortVillageReplacementsByPlayerProximity() {
+        if (pendingReplacements.size() <= 1) {
+            return; // Nothing to sort
+        }
+        
+        List<VillageReplacement> villages = new ArrayList<>(pendingReplacements);
+        Map<VillageReplacement, Double> distanceMap = new HashMap<>();
+        
+        // Find all online players for this level
+        for (VillageReplacement village : villages) {
+            ServerLevel level = village.level;
+            
+            // Find minimum distance to any player in this level
+            double minDistance = Double.MAX_VALUE;
+            List<net.minecraft.server.level.ServerPlayer> players = level.getServer().getPlayerList().getPlayers();
+            
+            for (net.minecraft.server.level.ServerPlayer player : players) {
+                // Only consider players in the same dimension/level
+                if (player.level() == level) {
+                    double distSq = player.blockPosition().distSqr(village.center);
+                    minDistance = Math.min(minDistance, distSq);
+                }
+            }
+            
+            // Store the minimum distance to any player
+            distanceMap.put(village, minDistance);
+        }
+        
+        // Sort villages by distance to nearest player (closest first)
+        villages.sort(Comparator.comparingDouble(distanceMap::get));
+        
+        // Clear the queue and add back in sorted order
+        pendingReplacements.clear();
+        pendingReplacements.addAll(villages);
+        
+        // Log that we've sorted villages by player proximity
+        if (!villages.isEmpty()) {
+            LOGGER.info("VILLAGE PRIORITY: Sorted {} villages by player proximity", villages.size());
         }
     }
 }
